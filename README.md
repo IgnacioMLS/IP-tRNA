@@ -30,6 +30,7 @@ In the case that you have the .fastq files in your computer you don't need to do
 
 # HOW TO USE IT.
 
+Clone the repository or download the zip file. Unzip the downloaded folder and open the main file.
 Open a terminal inside the Scripts folder (right button of the mouse opens a terminal) and type: python3 GUI.py 
 
 First of all, some necesary packages are installed from python. It is necesary to be aware because it is possible that the software asks for user password and user confirmation in order to install the modules. Then, if there aren't any problems with the python packages the GUI will initiate.  
