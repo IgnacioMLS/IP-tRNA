@@ -380,6 +380,7 @@ def r_analysis():
     if "Linux" in o_sys or "Darwin" in o_sys:
         subprocess.call(["Rscript", "--vanilla", "General_plots.r"])
         subprocess.call(["Rscript", "--vanilla", "Heatmaps.r"])
+        subprocess.call(["Rscript", "--vanilla", "Modification_comparison_test.r"])
         subprocess.call(["Rscript", "--vanilla", "DEG_analysis.r"])
         
     if "Windows" in o_sys: 
