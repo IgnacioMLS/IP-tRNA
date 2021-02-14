@@ -87,3 +87,11 @@ knitr::include_graphics(file9)
 ```
 
 
+
+```{r Mod analysis, echo=FALSE, out.width = '100%'}
+heatmap_url_mod = paste0("../Results/Heatmaps/Comparison_heatmap.html")
+
+```
+
+# [Modification analysis](`r heatmap_url_mod`)
+

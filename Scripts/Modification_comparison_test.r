@@ -1,6 +1,6 @@
 
 list.of.packages <- c("GenomicAlignments","GenomicFeatures", "Rsamtools","edgeR",
-                      "magick", "Glimma","reshape2")
+                      "magick", "Glimma","reshape2", "RColorBrewer")
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
 if(length(new.packages)){
@@ -29,6 +29,7 @@ library(data.table)
 library(heatmaply)
 library(gridExtra)
 library(ggplot2)
+  library('RColorBrewer')
 })
 
 
@@ -37,6 +38,7 @@ sample_data = read.table("../Fastq_downloaded/sample_data.txt", header=T,
 
 groups = levels(sample_data$Condition)
 dir = "../Results/Modification_ratio_plots"
+dir_scripts = getwd()
 
 aas = c("Ala", "Arg", "Asn", "Cys", "Gln", "Glu", "Gly", "His", "Ile", "iMet", 
         "Leu", "Lys", "Met", "Phe", "Pro", "SeC", "Ser", "Thr", "Trp", "Tyr", "Val")
@@ -57,7 +59,7 @@ for(aa in aas){
   # Only use the genes that have data in both groups.
   gene_levels = gene_levels[gene_levels %in% gene_levels2]
   
-  positions = c("9","27","32", "34", "37","47", "58")
+  positions = c("9","26","32", "34", "37","47", "58")
   position_info = matrix(ncol=length(positions), nrow=1)
   colnames(position_info) = positions
   rownames(position_info) = "pvalue"
@@ -129,4 +131,76 @@ for(aa in aas){
 aa_info = aa_info[aa_info$pos!="",]
 write.table(aa_info, file = "../Results/R_files/Modification_test.txt", 
             quote=FALSE, row.names = F)
+
+unique_genes = unique(aa_info$gene)
+
+
+final_data = matrix(ncol=length(positions), nrow=length(unique_genes))
+rownames(final_data) = unique_genes
+colnames(final_data) = positions
+
+pvalue_list = final_data
+mod1_list = final_data
+mod2_list = final_data
+custom_text = final_data
+
+cont = 1
+for(gene in unique_genes){
+  data_group1 = read.table(file=paste0(dir,"/",groups[1],"_",gene, ".txt"), header=T)
+  data_group2 = read.table(file=paste0(dir,"/",groups[2],"_",gene, ".txt"), header=T)
+  
+  info_pvalue = c()
+  info_dif = c()
+  info_mod1= c()
+  info_mod2 = c()
+  for(pos in positions){
+    if(pos %in% aa_info$pos[aa_info$gene == gene]){
+
+      mod1 = data_group1$Modification_ratio[data_group1$Position==pos]
+      mod2 = data_group2$Modification_ratio[data_group2$Position==pos]
+      dif = abs(mod1-mod2) * 100
+      
+      info_pvalue = c(info_pvalue, as.numeric(aa_info$pvalue[aa_info$pos==pos 
+                                                             & aa_info$gene==gene]))
+      info_dif = c(info_dif, dif)
+      info_mod1 = c(info_mod1, mod1)
+      info_mod2 = c(info_mod2, mod2)
+    }
+    else{
+      info_pvalue = c(info_pvalue, NA)
+      info_dif = c(info_dif, NA)
+      info_mod1 = c(info_mod1, NA)
+      info_mod2 = c(info_mod2, NA)
+    }}
+  
+  
+  pvalue_list[cont,1:ncol(final_data)] = info_pvalue
+  final_data[cont,1:ncol(final_data)] = info_dif
+  mod1_list[cont,1:ncol(final_data)] = info_mod1
+  mod2_list[cont,1:ncol(final_data)] = info_mod2
+  cont = cont +1
+}
+
+setwd("../Results/Heatmaps")
+heatmap_file = paste0("Comparison_heatmap.html")
+
+custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
+                     "Modification ratio ", groups[1], ": ", mod1_list, "\n",
+                     "Modification ratio ", groups[2], ": ", mod2_list, "\n",
+                     "Difference between groups (%): ", final_data, "\n",
+                     "pvalue: ", pvalue_list)
+
+heatmap = heatmaply(final_data,  
+                    colors= colorRampPalette(brewer.pal(3, "OrRd")),
+                    plot_method = "plotly", limits=c(0,max(final_data,
+                                                     na.rm=TRUE)),
+                    custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
+                    xlab="Position", ylab="Gene", column_text_angle=0, 
+                    dendogram=FALSE, show_dendogram=c("FALSE", "FALSE"),
+                    file=heatmap_file)
+setwd(dir_scripts)
+
+
+#out_table_x <- xtable(data_iso)
+#print(out_table_x, type='html', file="../Results/DEG/Results_isotRNACP.html")
 
