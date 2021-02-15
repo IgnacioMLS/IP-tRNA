@@ -75,34 +75,35 @@ for(aa in aas){
   rownames(gene_info) = positions
   cont = 0
   
-  for(gene in gene_levels){
+  for(gene in real_genes){
     cont = cont +1
-    data_group1 = read.table(file=paste0(dir,"/",groups[1],"_",gene), header=T)
-    data_group2 = read.table(file=paste0(dir,"/",groups[2],"_",gene), header=T)
+    data_group1 = read.table(file=paste0(dir,"/",groups[1],"_",gene, ".txt"), header=T)
+    data_group2 = read.table(file=paste0(dir,"/",groups[2],"_",gene, ".txt"), header=T)
     colnames(data_group1)[2] = "Corrected_pos" 
     colnames(data_group2)[2] = "Corrected_pos" 
     
     data_group1 = data.frame(data_group1, Group = groups[1])
     data_group2 = data.frame(data_group2, Group =groups[2])
     data_tot = rbind(data_group1, data_group2)
-    real_gene = substring(gene,1,nchar(gene)-4)
+    data_tot$Group = factor(data_tot$Group)
     p = ggplot(data = data_tot, aes(x=Corrected_pos, y=as.numeric(Modification_ratio), 
-                                color=Group)) + geom_line()+
-      labs(title='Modification ratio (Relative to gene coverage)', subtitle=real_gene,
+                                group=Group, color = Group)) + geom_line() +
+      labs(title='Modification ratio (Relative to gene coverage)', subtitle=gene,
            x="Position", y ="Modification ratio (Relative to gene coverage)")+
       scale_fill_manual(values= c("#0000FF", "#FF0000"),
                         breaks=c(groups[1], groups[2]))+
-      scale_x_discrete(limits = data_group1$Corrected_pos)+
+      scale_x_discrete(limits = as.character(data_group1$Corrected_pos))+
       theme(axis.text=element_text(size=16, color="black"),
             axis.text.x = element_text(size=12,angle=90),
             axis.title= element_text(size=20), legend.text = element_text(size = 16),
             legend.title = element_text(size=20), plot.subtitle = element_text(size=19),
             plot.title =element_text(size=20))
     
-    file_name = paste0("Modification_ratio_by_pos_", real_gene, ".jpeg")
+    p
+    file_name = paste0("Modification_ratio_by_pos_", gene, ".jpeg")
     ggsave(p, file=file_name, width = 35, 
            height = 25, units = "cm", path="../Results/Modification_ratio_plots/Comparison" )
-  #print(gene)
+
     ###FISHER TEST ####
     for(i in 1:length(positions)){
       if(positions[i] %in% data_group1$Corrected_pos){
@@ -124,19 +125,29 @@ for(aa in aas){
     }
     gene_info[,cont] = position_info
   }
+  
+
   indx = gene_info<0.05
   pos = rownames(gene_info)[row(gene_info)*indx]
   gene = colnames(gene_info)[col(gene_info)*indx]
   pvalue = gene_info[indx]
   gene_info_final = data.frame(pos, gene, pvalue)
   aa_info = rbind(aa_info, gene_info_final)
-  }
+}
+
 
 aa_info = aa_info[aa_info$pos!="",]
-write.table(aa_info, file = "../Results/R_files/Modification_test.txt", 
+adjusted_pvalues = p.adjust(aa_info$pvalue, method="BH", 
+                            n=length(positions)*length(gene_levels))
+aa_info_final = data.frame(aa_info, adjusted_pvalues)
+aa_info_final = aa_info_final[aa_info_final$adjusted_pvalues < 0.05,]
+
+
+write.table(aa_info_final, file = "../Results/R_files/Modification_test.txt", 
             quote=FALSE, row.names = F)
 
-unique_genes = unique(aa_info$gene)
+#real_genes = substring(aa_info_final$gene, 1, nchar(aa_info_final$gene)-4)
+unique_genes = unique(aa_info_final$gene)
 
 
 final_data = matrix(ncol=length(positions), nrow=length(unique_genes))
@@ -146,6 +157,8 @@ colnames(final_data) = positions
 pvalue_list = final_data
 mod1_list = final_data
 mod2_list = final_data
+cov1_list = final_data
+cov2_list = final_data
 custom_text = final_data
 
 cont = 1
@@ -157,26 +170,35 @@ for(gene in unique_genes){
   info_dif = c()
   info_mod1= c()
   info_mod2 = c()
+  info_cov1 = c()
+  info_cov2 = c()
 
   for(pos in positions){
-    if(pos %in% aa_info$pos[aa_info$gene == gene]){
+    if(pos %in% aa_info_final$pos[aa_info_final$gene == gene]){
 
       mod1 = data_group1$Modification_ratio[data_group1$Position==pos]
       mod2 = data_group2$Modification_ratio[data_group2$Position==pos]
-      dif = abs(mod1-mod2) * 100
       
-      new_pvalue =as.numeric(aa_info$pvalue[aa_info$pos==pos & aa_info$gene==gene])
+      dif = abs(mod1-mod2) * 100
+      cov1 = data_group1$Base_coverage[data_group1$Position==pos]
+      cov2 = data_group2$Base_coverage[data_group2$Position==pos]
+      
+      new_pvalue =as.numeric(aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
       new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
       info_pvalue = c(info_pvalue, new_pvalue)
       info_dif = c(info_dif, dif)
       info_mod1 = c(info_mod1, mod1)
       info_mod2 = c(info_mod2, mod2)
+      info_cov1 = c(info_cov1, cov1)
+      info_cov2 = c(info_cov2, cov2)
     }
     else{
       info_pvalue = c(info_pvalue, NA)
       info_dif = c(info_dif, NA)
       info_mod1 = c(info_mod1, NA)
       info_mod2 = c(info_mod2, NA)
+      info_cov1 = c(info_cov1, NA)
+      info_cov2 = c(info_cov2, NA)
     }}
   
   
@@ -185,6 +207,8 @@ for(gene in unique_genes){
   mod1_list[cont,1:ncol(final_data)] = info_mod1
   mod2_list[cont,1:ncol(final_data)] = info_mod2
   pvalue_list[cont,1:ncol(final_data)] = info_pvalue
+  cov1_list[cont,1:ncol(final_data)] = info_cov1
+  cov2_list[cont,1:ncol(final_data)] = info_cov2 
   cont = cont +1
 }
 
@@ -193,12 +217,14 @@ heatmap_file = paste0("Comparison_heatmap.html")
 
 custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
                      "Modification ratio ", groups[1], ": ", mod1_list, "\n",
+                     "Coverage ", groups[1], ": ", cov1_list, "\n",
                      "Modification ratio ", groups[2], ": ", mod2_list, "\n",
+                     "Coverage ", groups[2], ": ", cov2_list, "\n",
                      "Difference between groups (%): ", final_data, "\n",
-                     "pvalue: ", pvalue_list)
+                     "Adjusted pvalue: ", pvalue_list)
 
 heatmap = heatmaply(final_data,  
-                    colors= colorRampPalette(brewer.pal(3, "OrRd")),
+                    colors= colorRampPalette(brewer.pal(9, "OrRd")),
                     plot_method = "plotly", limits=c(0,max(final_data,
                                                      na.rm=TRUE)),
                     custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
