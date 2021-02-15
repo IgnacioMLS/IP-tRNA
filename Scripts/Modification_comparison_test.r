@@ -86,7 +86,6 @@ for(aa in aas){
     data_group2 = data.frame(data_group2, Group =groups[2])
     data_tot = rbind(data_group1, data_group2)
     real_gene = substring(gene,1,nchar(gene)-4)
-    data_tot$Modification_ratio
     p = ggplot(data = data_tot, aes(x=Corrected_pos, y=as.numeric(Modification_ratio), 
                                 color=Group)) + geom_line()+
       labs(title='Modification ratio (Relative to gene coverage)', subtitle=real_gene,
@@ -103,20 +102,25 @@ for(aa in aas){
     file_name = paste0("Modification_ratio_by_pos_", real_gene, ".jpeg")
     ggsave(p, file=file_name, width = 35, 
            height = 25, units = "cm", path="../Results/Modification_ratio_plots/Comparison" )
-  
+  #print(gene)
     ###FISHER TEST ####
     for(i in 1:length(positions)){
-      group1_pos<- as.data.frame(data_group1[data_group1$Corrected_pos == positions[i], ])
-      group2_pos<- as.data.frame(data_group2[data_group2$Corrected_pos == positions[i], ])
-      position_pos_test <- matrix(c(group1_pos$Base_coverage,group1_pos$Mod_bases,
-                                   group2_pos$Base_coverage,group2_pos$Mod_bases),
-                                 ncol=2,byrow=TRUE)
-      
-      rownames(position_pos_test)<-groups
-      colnames(position_pos_test)<-c("Coverage","Modification")
-      test_pos <- fisher.test(position_pos_test)
-      p_pos <- test_pos$p.value
-      position_info[i] = p_pos
+      if(positions[i] %in% data_group1$Corrected_pos){
+        group1_pos<- as.data.frame(data_group1[data_group1$Corrected_pos == positions[i], ])
+        group2_pos<- as.data.frame(data_group2[data_group2$Corrected_pos == positions[i], ])
+        position_pos_test <- matrix(c(group1_pos$Base_coverage,group1_pos$Mod_bases,
+                                     group2_pos$Base_coverage,group2_pos$Mod_bases),
+                                   ncol=2,byrow=TRUE)
+        
+        rownames(position_pos_test)<-groups
+        colnames(position_pos_test)<-c("Coverage","Modification")
+        test_pos <- fisher.test(position_pos_test)
+        p_pos <- test_pos$p.value
+        position_info[i] = p_pos
+      }
+      else{
+        position_info[i] = 1
+      }
     }
     gene_info[,cont] = position_info
   }
@@ -153,6 +157,7 @@ for(gene in unique_genes){
   info_dif = c()
   info_mod1= c()
   info_mod2 = c()
+
   for(pos in positions){
     if(pos %in% aa_info$pos[aa_info$gene == gene]){
 
@@ -160,8 +165,9 @@ for(gene in unique_genes){
       mod2 = data_group2$Modification_ratio[data_group2$Position==pos]
       dif = abs(mod1-mod2) * 100
       
-      info_pvalue = c(info_pvalue, as.numeric(aa_info$pvalue[aa_info$pos==pos 
-                                                             & aa_info$gene==gene]))
+      new_pvalue =as.numeric(aa_info$pvalue[aa_info$pos==pos & aa_info$gene==gene])
+      new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
+      info_pvalue = c(info_pvalue, new_pvalue)
       info_dif = c(info_dif, dif)
       info_mod1 = c(info_mod1, mod1)
       info_mod2 = c(info_mod2, mod2)
@@ -174,10 +180,11 @@ for(gene in unique_genes){
     }}
   
   
-  pvalue_list[cont,1:ncol(final_data)] = info_pvalue
+
   final_data[cont,1:ncol(final_data)] = info_dif
   mod1_list[cont,1:ncol(final_data)] = info_mod1
   mod2_list[cont,1:ncol(final_data)] = info_mod2
+  pvalue_list[cont,1:ncol(final_data)] = info_pvalue
   cont = cont +1
 }
 
