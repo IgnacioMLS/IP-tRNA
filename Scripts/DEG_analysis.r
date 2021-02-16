@@ -73,7 +73,6 @@ deseqdata_total$Condition <- droplevels(deseqdata_total$Condition)
 des <- DESeq(deseqdata_total)
 
 #CHANGE/VERIFY THE ORDER OF THE COMPARISON
-#EXAMPLE: condition ADAT2 vs CONTROL, tells you that the estimates are of the logarithmic fold change log2(ADAT2/CONTROL)
 resDESeq2 <- results(des, 
                pAdjustMethod="BH")
 
@@ -169,8 +168,15 @@ conditions2 = sample_data$Condition == levels(sample_data$Condition)[2]
 # Apply Wilcoxon test (a nonparametric statistical test that compares two paired groups)
 is0 = apply(proportions, 1, function(x) sum(x)==0)
 proportions = na.omit(proportions[!is0,])
-test <- apply(proportions,1, function(a) 
-  wilcox.test(x=a[conditions1],y=a[conditions2], exact=FALSE)$p.value)
+# We compute pvalue with alternative hipothesis less and gr than and choose the
+# lower value (the comparison that has sense)
+test1 <- apply(proportions,1, function(a) 
+  wilcox.test(x=a[conditions1],y=a[conditions2], alternative = "less")$p.value)
+test2 = apply(proportions,1, function(a) 
+  wilcox.test(x=a[conditions1],y=a[conditions2], alternative = "gr")$p.value)
+test = cbind(test1, test2)
+test = apply(test,1,function(x) min(x))
+
 Adjusted_pvalue = p.adjust(test, method="BH")
 
 test = as.data.frame(test)
