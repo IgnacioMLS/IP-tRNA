@@ -6,7 +6,6 @@ IP-tRNA is a tool designed to analyze small RNA-seq datasets (Illumina single-en
 **Operative system:** Mac (OS X El Capitan or higher) or Linux.  
 
 **Prerequisites:**
-
 Before using the GUI make sure you have: 
 - Python 3.x  
 - R 3.6.3  
