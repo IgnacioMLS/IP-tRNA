@@ -36,9 +36,9 @@ then
     brew install --cask anaconda
     brew cask install miniconda
     #install wget
-    brew install wget
+    brew install --build-from-source wget
     #Install R
-    brew install r
+    #brew install r
     #Install Python packages
     pip install pysamstats
     pip install pysam
