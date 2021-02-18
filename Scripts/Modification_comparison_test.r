@@ -47,8 +47,8 @@ if (!file.exists("../Results/Modification_ratio_plots/Comparison")){
   dir.create("../Results/Modification_ratio_plots/Comparison", recursive=TRUE)
 }
 
-number_positions = 4
 aa_info = data.frame(pos="", gene="",pvalue="")
+number_genes = 1
 for(aa in aas){
   files_aa = grep(pattern=aa, files, value=T)
   genes_aa = levels(as.factor(grep(pattern=groups[1], files_aa, value=T)))
@@ -103,7 +103,7 @@ for(aa in aas){
     file_name = paste0("Modification_ratio_by_pos_", gene, ".jpeg")
     ggsave(p, file=file_name, width = 35, 
            height = 25, units = "cm", path="../Results/Modification_ratio_plots/Comparison" )
-
+    number_genes = number_genes+1
     ###FISHER TEST ####
     for(i in 1:length(positions)){
       if(positions[i] %in% data_group1$Corrected_pos){
@@ -138,7 +138,7 @@ for(aa in aas){
 
 aa_info = aa_info[aa_info$pos!="",]
 adjusted_pvalues = p.adjust(aa_info$pvalue, method="BH", 
-                            n=length(positions)*length(gene_levels))
+                            n=length(positions)*number_genes)
 aa_info_final = data.frame(aa_info, adjusted_pvalues)
 aa_info_final = aa_info_final[aa_info_final$adjusted_pvalues < 0.05,]
 
@@ -150,89 +150,97 @@ write.table(aa_info_final, file = "../Results/R_files/Modification_test.txt",
 unique_genes = unique(aa_info_final$gene)
 
 
-final_data = matrix(ncol=length(positions), nrow=length(unique_genes))
-rownames(final_data) = unique_genes
-colnames(final_data) = positions
-
-pvalue_list = final_data
-mod1_list = final_data
-mod2_list = final_data
-cov1_list = final_data
-cov2_list = final_data
-custom_text = final_data
-
-cont = 1
-for(gene in unique_genes){
-  data_group1 = read.table(file=paste0(dir,"/",groups[1],"_",gene, ".txt"), header=T)
-  data_group2 = read.table(file=paste0(dir,"/",groups[2],"_",gene, ".txt"), header=T)
+for(aa in aas){
+  id = grep(aa,unique_genes)
+  cont = 1
   
-  info_pvalue = c()
-  info_dif = c()
-  info_mod1= c()
-  info_mod2 = c()
-  info_cov1 = c()
-  info_cov2 = c()
-
-  for(pos in positions){
-    if(pos %in% aa_info_final$pos[aa_info_final$gene == gene]){
-
-      mod1 = data_group1$Modification_ratio[data_group1$Position==pos]
-      mod2 = data_group2$Modification_ratio[data_group2$Position==pos]
-      
-      dif = abs(mod1-mod2) * 100
-      cov1 = data_group1$Base_coverage[data_group1$Position==pos]
-      cov2 = data_group2$Base_coverage[data_group2$Position==pos]
-      
-      new_pvalue =as.numeric(aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
-      new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
-      info_pvalue = c(info_pvalue, new_pvalue)
-      info_dif = c(info_dif, dif)
-      info_mod1 = c(info_mod1, mod1)
-      info_mod2 = c(info_mod2, mod2)
-      info_cov1 = c(info_cov1, cov1)
-      info_cov2 = c(info_cov2, cov2)
-    }
-    else{
-      info_pvalue = c(info_pvalue, NA)
-      info_dif = c(info_dif, NA)
-      info_mod1 = c(info_mod1, NA)
-      info_mod2 = c(info_mod2, NA)
-      info_cov1 = c(info_cov1, NA)
-      info_cov2 = c(info_cov2, NA)
-    }}
+  genes_aa = unique_genes[id]
+  final_data = matrix(ncol=length(positions), nrow=length(genes_aa))
+  rownames(final_data) = genes_aa
+  colnames(final_data) = positions
   
+  pvalue_list = final_data
+  mod1_list = final_data
+  mod2_list = final_data
+  cov1_list = final_data
+  cov2_list = final_data
+  custom_text = final_data
+  info_list = final_data
+  for(i in id){
+    gene = unique_genes[i]
+    data_group1 = read.table(file=paste0(dir,"/",groups[1],"_",gene, ".txt"),
+                             header=T)
+    data_group2 = read.table(file=paste0(dir,"/",groups[2],"_",gene, ".txt"), 
+                             header=T)
   
+    info_pvalue = c()
+    info_mod1= c()
+    info_mod2 = c()
+    info_cov1 = c()
+    info_cov2 = c()
+    info_dif = c()
 
-  final_data[cont,1:ncol(final_data)] = info_dif
-  mod1_list[cont,1:ncol(final_data)] = info_mod1
-  mod2_list[cont,1:ncol(final_data)] = info_mod2
-  pvalue_list[cont,1:ncol(final_data)] = info_pvalue
-  cov1_list[cont,1:ncol(final_data)] = info_cov1
-  cov2_list[cont,1:ncol(final_data)] = info_cov2 
-  cont = cont +1
+    for(pos in positions){
+      if(pos %in% aa_info_final$pos[aa_info_final$gene == gene]){
+  
+        mod1 = data_group1$Modification_ratio[data_group1$Position==pos]
+        mod2 = data_group2$Modification_ratio[data_group2$Position==pos]
+        
+        dif = abs(mod1-mod2)
+        cov1 = data_group1$Base_coverage[data_group1$Position==pos]
+        cov2 = data_group2$Base_coverage[data_group2$Position==pos]
+        
+        new_pvalue =as.numeric(aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
+        new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
+        info_pvalue = c(info_pvalue, new_pvalue)
+        info_mod1 = c(info_mod1, mod1)
+        info_mod2 = c(info_mod2, mod2)
+        info_cov1 = c(info_cov1, cov1)
+        info_cov2 = c(info_cov2, cov2)
+        info_dif = c(info_dif, dif)
+      }
+      else{
+        info_pvalue = c(info_pvalue, NA)
+        info_mod1 = c(info_mod1, NA)
+        info_mod2 = c(info_mod2, NA)
+        info_cov1 = c(info_cov1, NA)
+        info_cov2 = c(info_cov2, NA)
+        info_dif = c(info_dif, NA)
+      }}
+  
+    
+    final_data[cont,1:ncol(final_data)] = info_pvalue
+    mod1_list[cont,1:ncol(final_data)] = info_mod1
+    mod2_list[cont,1:ncol(final_data)] = info_mod2
+    pvalue_list[cont,1:ncol(final_data)] = info_pvalue
+    cov1_list[cont,1:ncol(final_data)] = info_cov1
+    cov2_list[cont,1:ncol(final_data)] = info_cov2 
+    info_list[cont,1:ncol(final_data)] = info_dif
+    cont = cont +1
+  }
+  if(nrow(final_data) >0){
+    setwd("../Results/Heatmaps")
+    heatmap_file = paste0("Comparison_", aa, ".html")
+    
+    custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
+                           "Modification ratio ", groups[1], ": ", mod1_list, "\n",
+                           "Coverage ", groups[1], ": ", cov1_list, "\n",
+                           "Modification ratio ", groups[2], ": ", mod2_list, "\n",
+                           "Coverage ", groups[2], ": ", cov2_list, "\n",
+                           "Difference between groups (%): ", info_list, "\n",
+                           "Adjusted pvalue: ", pvalue_list)
+    
+    heatmap = heatmaply(final_data,  
+                        colors= colorRampPalette(rev(brewer.pal(9, "OrRd"))),
+                        plot_method = "plotly", limits=c(0,max(final_data,
+                                                               na.rm=TRUE)),
+                        custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
+                        xlab="Position", ylab="Gene", column_text_angle=0, 
+                        dendogram=FALSE, show_dendogram=c("FALSE", "FALSE"),
+                        file=heatmap_file)
+    setwd(dir_scripts)
+  }
 }
-
-setwd("../Results/Heatmaps")
-heatmap_file = paste0("Comparison_heatmap.html")
-
-custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
-                     "Modification ratio ", groups[1], ": ", mod1_list, "\n",
-                     "Coverage ", groups[1], ": ", cov1_list, "\n",
-                     "Modification ratio ", groups[2], ": ", mod2_list, "\n",
-                     "Coverage ", groups[2], ": ", cov2_list, "\n",
-                     "Difference between groups (%): ", final_data, "\n",
-                     "Adjusted pvalue: ", pvalue_list)
-
-heatmap = heatmaply(final_data,  
-                    colors= colorRampPalette(brewer.pal(9, "OrRd")),
-                    plot_method = "plotly", limits=c(0,max(final_data,
-                                                     na.rm=TRUE)),
-                    custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
-                    xlab="Position", ylab="Gene", column_text_angle=0, 
-                    dendogram=FALSE, show_dendogram=c("FALSE", "FALSE"),
-                    file=heatmap_file)
-setwd(dir_scripts)
-
 
 #out_table_x <- xtable(data_iso)
 #print(out_table_x, type='html', file="../Results/DEG/Results_isotRNACP.html")
