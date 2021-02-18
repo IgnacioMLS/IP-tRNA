@@ -428,29 +428,7 @@ def create_text():
 
     scriptsFolder=app.scriptsFolder       
     os.chdir(scriptsFolder)
-    
-
-def r_script():
-    '''
-    This function launches an R script aimed at doing a differential expression
-    analysis of the results obtained from the pipeline
-    '''
-    os.chdir(app.scriptsFolder)
-    if 'Linux' in o_sys or 'Darwin' in o_sys:
-        subprocess.call(["Rscript", "--vanilla", "DEG_analysis.r"])
-        subprocess.call(["Rscript", "--vanilla", "Iso_test_all.r"])
-    if 'Windows' in o_sys:
-        file = open("DEG_analysis.bat","w")
-        file.write("Rscript.exe DEG_analysis.r %*")
-        file.close()
-        file2 = open("Iso_test_all.bat", "w")
-        file2.write("Rscript.exe Iso_test_all.r %*")
-        file2.close()
-        subprocess.call("DEG_analysis")
-        subprocess.call("Iso_test_all")
-
-    
-    
+        
     
 
 # WIDGETS FOR THE GUI
