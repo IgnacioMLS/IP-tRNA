@@ -1,5 +1,5 @@
 # IP-tRNA-dat
-IP-tRNA is a tool designed to analyze small RNA-seq datasets (Illumina single-end) in order to characterize tRNAs. Includes a specific mapping workflow and provides a report that contains information about tRNA quantification, classification (pre-tRNAs and processed tRNAs), sequence coverage, modification ratio and differentially expressed genes between two conditions/groups(DESeq2 and Iso-tRNA-cp).
+IP-tRNA is a tool designed to analyze small RNA-seq datasets (Illumina single-end) in order to characterize tRNAs. Includes a specific mapping workflow and provides a report that contains information about tRNA quantification, classification (pre-tRNAs and processed tRNAs), sequence coverage, modification ratio and differentially expressed genes between two conditions/groups (DESeq2 and Iso-tRNA-cp).
 
 # REQUIREMENTS
 
@@ -80,8 +80,8 @@ Internal files used by Rscripts to compute our analysis.
 ## Folders with the ID of each sample.
 It contains the results of the alignment of each sample, the number of counts and the base calling.
 
-
-
+# Support
+If you have any questions or issues, please use [Issues Section](https://github.com/IgnacioMLS/IP-tRNA/issues) 
 
 # References.
 1. Galili, Tal, O'Callaghan, Alan, Sidi, Jonathan, Sievert, Carson (2017). “heatmaply: an R package for creating interactive cluster heatmaps for online publishing.” Bioinformatics.
