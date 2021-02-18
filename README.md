@@ -2,7 +2,7 @@
 
 # REQUIREMENTS:
 
-Operative system: Mac or Linux.
+Operative system: Mac (OS X El Capitan or higher) or Linux.
 
 
 Installed and added to the PATH:
@@ -10,7 +10,7 @@ Installed and added to the PATH:
 	bowtie2
 	samtools
 	bedtools
-	R
+	R 3.6.3
 	gedit
 	picardtools
 	pysamstats, pysam, tkinter, pysam packages
