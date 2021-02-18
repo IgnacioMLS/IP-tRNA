@@ -4,10 +4,11 @@ IP-tRNA is a tool designed to analyze small RNA-seq datasets (Illumina single-en
 # REQUIREMENTS
 
 **Operative system:** Mac (OS X El Capitan or higher) or Linux.
-
-**Requirements** (Installed and added to the PATH):  
+**Prerequisites:**
 - python 3.x  
-- R 3.6.3
+- R 3.6.3  
+**Requirements** (Installed and added to the PATH):  
+- Anaconda
 - bowtie2  
 - samtools  
 - bedtools  
@@ -15,7 +16,7 @@ IP-tRNA is a tool designed to analyze small RNA-seq datasets (Illumina single-en
 - picardtools  
 - Python packages: pysamstats, pysam, tkinter  
 	
-All these programs can be downloaded and installed manually or using the "Download dependencies" button included in the Graphical User Interface (GUI).
+All these requirements can be downloaded and installed manually or using the "Download dependencies" button included in the Graphical User Interface (GUI).
 
 # EXPLANATION OF THE GUI
 
