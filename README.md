@@ -53,11 +53,11 @@ First of all, some necesary packages are installed from python. It is necesary t
 
 
 
-# Results.
+# RESULTS
 
 In the results folder are generated the following folders:
 
-### Counts Plots
+### Counts Plots.
 In this folder are contained the count plots:  
 	- Total counts by isodecoder tRNA and by tRNA gene grouped by isoacceptor tRNA in each condition.  
 	- Proportion mature/precursor by isodecoder tRNA and by tRNA gene group by isoacceptor tRNA in each condition.  
