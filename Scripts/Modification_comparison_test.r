@@ -165,8 +165,9 @@ for(aa in aas){
   cov1_list = final_data
   cov2_list = final_data
   custom_text = final_data
-  info_list = final_data
-  for(i in id){
+  log2fc_list = final_data
+  # Bucle for, in each isodecoder
+  for(i in id){ 
     gene = unique_genes[i]
     data_group1 = read.table(file=paste0(dir,"/",groups[1],"_",gene, ".txt"),
                              header=T)
@@ -178,26 +179,36 @@ for(aa in aas){
     info_mod2 = c()
     info_cov1 = c()
     info_cov2 = c()
-    info_dif = c()
+    info_log2fc = c()
 
     for(pos in positions){
       if(pos %in% aa_info_final$pos[aa_info_final$gene == gene]){
-  
-        mod1 = data_group1$Modification_ratio[data_group1$Position==pos]
-        mod2 = data_group2$Modification_ratio[data_group2$Position==pos]
-        
-        dif = abs(mod1-mod2)
         cov1 = data_group1$Base_coverage[data_group1$Position==pos]
         cov2 = data_group2$Base_coverage[data_group2$Position==pos]
-        
-        new_pvalue =as.numeric(aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
-        new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
-        info_pvalue = c(info_pvalue, new_pvalue)
-        info_mod1 = c(info_mod1, mod1)
-        info_mod2 = c(info_mod2, mod2)
-        info_cov1 = c(info_cov1, cov1)
-        info_cov2 = c(info_cov2, cov2)
-        info_dif = c(info_dif, dif)
+        if(cov1 > 50 | cov2 >50){
+          mod1 = data_group1$Modification_ratio[data_group1$Position==pos] * 100
+          mod2 = data_group2$Modification_ratio[data_group2$Position==pos] * 100
+          
+          log2fc = (2*(mod1-mod2)/ (mod1+mod2))
+          
+          new_pvalue = (aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
+          new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
+          new_pvalue = formatC(new_pvalue,format="e")
+          info_pvalue = c(info_pvalue, new_pvalue)
+          info_mod1 = c(info_mod1, mod1)
+          info_mod2 = c(info_mod2, mod2)
+          info_cov1 = c(info_cov1, cov1)
+          info_cov2 = c(info_cov2, cov2)
+          info_log2fc = c(info_log2fc, log2fc)
+        }
+        else{
+          info_pvalue = c(info_pvalue, NA)
+          info_mod1 = c(info_mod1, NA)
+          info_mod2 = c(info_mod2, NA)
+          info_cov1 = c(info_cov1, NA)
+          info_cov2 = c(info_cov2, NA)
+          info_log2fc = c(info_log2fc, NA)
+        }
       }
       else{
         info_pvalue = c(info_pvalue, NA)
@@ -205,17 +216,17 @@ for(aa in aas){
         info_mod2 = c(info_mod2, NA)
         info_cov1 = c(info_cov1, NA)
         info_cov2 = c(info_cov2, NA)
-        info_dif = c(info_dif, NA)
+        info_log2fc = c(info_log2fc, NA)
       }}
   
     
-    final_data[cont,1:ncol(final_data)] = info_pvalue
+    final_data[cont,1:ncol(final_data)] = info_log2fc
     mod1_list[cont,1:ncol(final_data)] = info_mod1
     mod2_list[cont,1:ncol(final_data)] = info_mod2
     pvalue_list[cont,1:ncol(final_data)] = info_pvalue
     cov1_list[cont,1:ncol(final_data)] = info_cov1
     cov2_list[cont,1:ncol(final_data)] = info_cov2 
-    info_list[cont,1:ncol(final_data)] = info_dif
+    log2fc_list[cont,1:ncol(final_data)] = info_log2fc
     cont = cont +1
   }
   if(nrow(final_data) >0){
@@ -223,17 +234,18 @@ for(aa in aas){
     heatmap_file = paste0("Comparison_", aa, ".html")
     
     custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
-                           "Modification ratio ", groups[1], ": ", mod1_list, "\n",
+                           "Modification ", groups[1], " (%): ", mod1_list, "\n",
                            "Coverage ", groups[1], ": ", cov1_list, "\n",
-                           "Modification ratio ", groups[2], ": ", mod2_list, "\n",
+                           "Modification ", groups[2], " (%): ", mod2_list, "\n",
                            "Coverage ", groups[2], ": ", cov2_list, "\n",
-                           "Difference between groups (%): ", info_list, "\n",
+                           "(",groups[1], " - ", groups[2],")", "/mean: ", log2fc_list, "\n",
                            "Adjusted pvalue: ", pvalue_list)
     
     heatmap = heatmaply(final_data,  
-                        colors= colorRampPalette(rev(brewer.pal(9, "OrRd"))),
-                        plot_method = "plotly", limits=c(0,max(final_data,
-                                                               na.rm=TRUE)),
+                        colors= colorRampPalette(rev(brewer.pal(9, "RdBu"))),
+                        plot_method = "plotly", 
+                        limits=c(min(final_data, na.rm=TRUE),
+                                              max(final_data,na.rm=TRUE)),
                         custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
                         xlab="Position", ylab="Gene", column_text_angle=0, 
                         dendogram=FALSE, show_dendogram=c("FALSE", "FALSE"),

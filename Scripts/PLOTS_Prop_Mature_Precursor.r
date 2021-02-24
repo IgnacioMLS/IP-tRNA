@@ -34,7 +34,8 @@ if (!file.exists("../Results/Counts_plots/Mature_vs_Precursor/By_tRNA_family")){
   dir.create("../Results/Counts_plots/Mature_vs_Precursor/By_tRNA_family", recursive=TRUE)
 }
 
-
+trna_tot_all_samples = data.frame()
+trna_mature_all_samples = data.frame()
 for(group in groups){
   trna_total=c()
   trna_mature=c()
@@ -59,6 +60,11 @@ for(group in groups){
   trna_mature <- data.frame(trna_mature_all,do.call(rbind,strsplit(as.character(trna_mature_all$Group.1),"-")))
   trna_mature <- subset(trna_mature,trna_mature$X2 !="*")
   trna_total$X2 = factor(trna_total$X2)
+  
+  trna_total_sample = data.frame(trna_total, group = group)
+  trna_tot_all_samples = rbind(trna_tot_all_samples, trna_total_sample)
+  trna_mature_sample = data.frame(trna_mature, group = group)
+  trna_mature_all_samples = rbind(trna_mature_all_samples, trna_mature_sample)
   
   aa <- levels(trna_total$X2)
   aa<- aa[aa !="*"]
@@ -105,6 +111,7 @@ for(group in groups){
     ggsave (plot=p, filename=paste0("../Results/Counts_plots/Mature_vs_Precursor/By_tRNA_family/",group,"_",e,"_by_family.jpeg"), width = 20, height = 10, units = "cm")
   }
   
+
   
   #By anticodon
   trna_mature$trna <- paste(trna_mature$X2,trna_mature$X3)
@@ -185,6 +192,33 @@ for(group in groups){
     scale_fill_manual("", values = c("Processed" = "#bddef0", "Precursor" = "#7180a7"))
   ggsave(plot=p, filename=paste0("../Results/Counts_plots/Mature_vs_Precursor/",group,"_by_Isoacceptor.jpeg"), width = 20, height = 10, units = "cm")
   
+  
+}
+
+plot_data = data.frame(gene = trna_tot_all_samples$Group.1, ratio_mature = 
+            trna_mature_all_samples$V1 / trna_tot_all_samples$V1,
+            group = trna_tot_all_samples$group, aa = trna_tot_all_samples$X2 )
+
+for(e in aa){
+  plot_aa = plot_data[plot_data$aa ==e,]
+  plot_aa$group = factor(plot_aa$group)
+  
+  p <- ggplot(plot_aa, aes(y=ratio_mature, x=gene, fill=group)) + 
+    geom_bar(position = position_dodge(), 
+             stat="identity",width=0.5,color="black") + 
+    scale_fill_manual("",values = c("#bddef0", "#7180a7"))+
+    theme (axis.text.x = element_text(angle=90,color="black", size = 7, vjust=0.5),
+           axis.text.y = element_text(color="black")) + 
+    ylim (0,1) + 
+
+    labs (x = "tRNA family", y = "Mature ratio") + 
+    theme (panel.background = element_rect(fill = "snow2",colour = "snow2",
+                                           size = 0.5, linetype = "solid"),
+           legend.position = "top") +
+    labs (title = "Mature ratio")
+  ggsave (plot=p, filename=paste0(
+    "../Results/Counts_plots/Mature_vs_Precursor/By_tRNA_family/Comparison_"
+    ,e,"_by_family.jpeg"), width = 20, height = 10, units = "cm")
   
 }
 

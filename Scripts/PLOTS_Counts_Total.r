@@ -58,8 +58,10 @@ for(group in groups){
   }
   
   #Marge results.
-  trna_total_all <- data.frame(aggregate(cbind(trna_total$V2), by=list(trna_total$V1), FUN=sum))
-  trna_total <- data.frame(trna_total_all,do.call(rbind,strsplit(as.character(trna_total_all$Group.1),"-")))
+  trna_total_all <- data.frame(aggregate(cbind(trna_total$V2), 
+                                         by=list(trna_total$V1), FUN=sum))
+  trna_total <- data.frame(trna_total_all,do.call(
+    rbind,strsplit(as.character(trna_total_all$Group.1),"-")))
   trna_total$X2 = factor(trna_total$X2)
   trna_total = trna_total[substring(trna_total$Group.1 ,1,2) == "tR",]
   

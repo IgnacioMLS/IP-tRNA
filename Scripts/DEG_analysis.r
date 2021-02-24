@@ -43,86 +43,137 @@ library(rmarkdown)
 if (!file.exists("../Results/DEG")){
   dir.create("../Results/DEG", recursive=TRUE)
 }
-tmp_total <- read.delim("../Results/R_files/Counts/Counts_by_gene_total_for_DESeq2.txt")
-#tmp_total <- read.delim("/home/ignacio/Documentos/PhD/Pipeline/Metanalisis/Counts_by_gene_total_for_DESeq2.txt")
+all_genes <- read.delim("../Results/R_files/Counts/Counts_by_gene_total_for_DESeq2.txt")
 
 sum = apply(tmp_total,2,sum)
-#2-Obtain sample info.
+
 sampleInfo_total <- read.table("../Fastq_downloaded/sample_data.txt",
                                header=T, stringsAsFactors = T)
 
-#3-Use the count matrix and the sample info to create the final matrix.
-deseqdata_total <- DESeqDataSetFromMatrix(countData=tmp_total, 
-                                          colData=sampleInfo_total, 
-                                          design=~Condition)
-##Remember:The DESeq2 model internally corrects for library size, so transformed or normalized values such as counts scaled by library size should not be used as input.
 
-#sum(colSums(assays(deseqdata_total)$counts)) #all the reads of the whole experiment 
-#sum(colSums(assays(deseqdata_total)$counts))/ncol(deseqdata_total) #this is the ideal depth (is the same value as the mean of the summary)
-dge <- DGEList(counts=assays(deseqdata_total)$counts, genes=mcols(deseqdata_total),
-               group=deseqdata_total$Condition)
-#ord = order(dge$samples$lib.size/1e6)
+## DESeq2 for isoaceptors.
 
-## DESeq2
+all_data = data.frame(all_genes, isodecoder=rownames(all_genes))
+all_data = data.frame(all_data, do.call(rbind, strsplit(as.character(
+  all_data$isodecoder), "-")))
+# We keep the count matrix and the aa.
+all_data = all_data[c(c(1:ncol(tmp_total)), ncol(all_data)-3, ncol(all_data)-2)]
+colnames(all_data)[c(ncol(all_data)-1,ncol(all_data))] = c("aa", "codon")
 
-#Level factors 
-deseqdata_total$Condition <- factor(deseqdata_total$Condition)
-deseqdata_total$Condition <- droplevels(deseqdata_total$Condition)
+all_data = all_data[all_data$aa !="*",]
+all_data$aa = factor(all_data$aa)
+isoaceptors = data.frame()
+for(aminoacid in levels(all_data$aa)){
+  # Select all isodecoders from each isoaceptor, delete codon and isoaceptor info
+  isoaceptor1 = all_data[all_data$aa==aminoacid,1:(ncol(all_data)-2)]
+  isoaceptor1 = t(apply(isoaceptor1, 2, function(x) sum(x)))
+  rownames(isoaceptor1) = aminoacid
+  isoaceptors = rbind(isoaceptors, isoaceptor1)
+}
 
-#Perform the DE 
-des <- DESeq(deseqdata_total)
 
-#CHANGE/VERIFY THE ORDER OF THE COMPARISON
-resDESeq2 <- results(des, 
-               pAdjustMethod="BH")
+all_data = data.frame(all_data, paste0(all_data$aa, " ", all_data$codon))
+colnames(all_data)[ncol(all_data)] = "isodecoder"
+all_data$isodecoder = factor(all_data$isodecoder)
+isodecoders = data.frame()
+for(isodecoder in levels(all_data$isodecoder)){
+  # Select all isodecoders from each isoaceptor, delete codon and isoaceptor info
+  isodecoder1 = all_data[all_data$isodecoder==isodecoder,1:(ncol(all_data)-3)]
+  isodecoder1 = t(apply(isodecoder1, 2, function(x) sum(x)))
+  rownames(isodecoder1) = isodecoder
+  isodecoders = rbind(isodecoders, isodecoder1)
+}
 
-out_result = na.omit(data.frame(resDESeq2))
-setorderv(out_result, cols="padj")
-write.table(out_result, file = "../Results/DEG/DESeq2_results.txt", sep = "\t",
-            row.names = TRUE, col.names = NA, quote=FALSE)
+repeats = c("isoaceptors", "isodecoders","all_genes" )
+for(condition in repeats){
+  if(condition =="isoaceptors"){ count_data = isoaceptors}
+  if(condition =="isodecoders"){ count_data = isodecoders}
+  if(condition =="all_genes"){ count_data = all_genes}
+  # Use the count matrix and the sample info to create the final matrix.
+  
+  deseqdata_total <- DESeqDataSetFromMatrix(countData=count_data, 
+                                            colData=sampleInfo_total, 
+                                            design=~Condition)
+  ##Remember:The DESeq2 model internally corrects for library size, so transformed or normalized values such as counts scaled by library size should not be used as input.
+  
+  #sum(colSums(assays(deseqdata_total)$counts)) #all the reads of the whole experiment 
+  #sum(colSums(assays(deseqdata_total)$counts))/ncol(deseqdata_total) #this is the ideal depth (is the same value as the mean of the summary)
+  dge <- DGEList(counts=assays(deseqdata_total)$counts, genes=mcols(deseqdata_total),
+                 group=deseqdata_total$Condition)
+  #ord = order(dge$samples$lib.size/1e6)
 
-#We can order our results table by the smallest p value:
-resDESeq2Ordered <- resDESeq2[order(resDESeq2$pvalue),]
+  
+  #Level factors 
+  deseqdata_total$Condition <- factor(deseqdata_total$Condition)
+  deseqdata_total$Condition <- droplevels(deseqdata_total$Condition)
+  
+  #Perform the DE 
+  des <- DESeq(deseqdata_total)
+  
+  #CHANGE/VERIFY THE ORDER OF THE COMPARISON
+  resDESeq2 <- results(des, 
+                       pAdjustMethod="BH")
+  
+  out_result = na.omit(data.frame(resDESeq2))
+  setorderv(out_result, cols="padj")
+  file_out = paste0("../Results/DEG/DESeq2_", condition, "_results.txt")
+  write.table(out_result, file = file_out, sep = "\t",
+              row.names = TRUE, col.names = NA, quote=FALSE)
+  
+  #We can order our results table by the smallest p value:
+  resDESeq2Ordered <- resDESeq2[order(resDESeq2$pvalue),]
+  
+  # This gives log2(n +1)
+  ntd = normTransform(deseqdata_total)
+  file_heatmap_jpeg = paste0("../Results/DEG/Heatmap_", condition, "_DESeq2.jpeg")
+  jpeg(file_heatmap_jpeg)
+  show_rownames=F
+  if(condition != "all_genes"){ show_rownames=T}
+  pheatmap(assay(ntd), cluster_rows=T, show_rownames=show_rownames, show_colnames = T,
+           cluster_cols=T,fontsize_row=8, clustering_method="ward.D")
+  resDESeq2_data <- as.data.frame(assay(ntd))
+  file_heatmap_txt = paste0("../Results/DEG/Heatmap_", condition, "_DESeq2.txt")
+  write.table(resDESeq2_data, file = file_heatmap_txt, sep = "\t",
+              row.names = TRUE, col.names = NA)
+  dev.off()
+  
+  group1 = which(sampleInfo_total$ID %in% unfactor(sampleInfo_total$ID[
+    sampleInfo_total$Condition ==  levels(sampleInfo_total$Condition)[1] ] ))
+  
+  group2 = which(sampleInfo_total$ID %in% sampleInfo_total$ID[
+    sampleInfo_total$Condition ==  levels(sampleInfo_total$Condition)[2] ] )
+  
+  mean_group1 = apply(assay(ntd),1, function(x) mean(x[group1]))
+  mean_group2 = apply(assay(ntd),1, function(x) mean(x[group2]))
+  diff_expr = mean_group1 - mean_group2
+  
+  mean_data = data.frame(mean_group1, mean_group2)
+  colnames(mean_data) = c(levels(sampleInfo_total$Condition))
+  
+  f_heatmap_groups_jpeg = paste0("../Results/DEG/Heatmap_groups_", 
+                                 condition, "_DESeq2.jpeg")
+  jpeg(f_heatmap_groups_jpeg)
+  
+  pheatmap(mean_data, cluster_rows=T, show_rownames=show_rownames, show_colnames = T,
+           cluster_cols=F,fontsize_row=8, clustering_method="ward.D")
+  resDESeq2_data_mean <- as.data.frame(mean_data)
+  f_heatmap_groups_jpeg = paste0("../Results/DEG/Heatmap_groups", 
+                                 condition, "_DESeq2.txt")
+  write.table(resDESeq2_data_mean, file = "../Results/DEG/Heatmap_groups_DESeq2.txt", sep = "\t",
+              row.names = TRUE, col.names = NA)
+  dev.off()
+  
+  
+  ## Data visualization. Glimma
+  status <- as.numeric(resDESeq2$padj < .05)
+  anno <- data.frame(GeneID=rownames(resDESeq2))
+  fMD = paste0("DESeq2_MD-plot_", condition)
+  glMDPlot(resDESeq2, status=status, counts=counts(des,normalized=TRUE),
+           groups=des$Condition, transform=FALSE,
+           samples=colnames(des), anno=anno, launch = F, 
+           html =fMD ,folder = "../Results/DEG")
+}
 
-# This gives log2(n +1)
-ntd = normTransform(deseqdata_total)
-
-jpeg("../Results/DEG/Heatmap_total_DESeq2.jpeg")
-pheatmap(assay(ntd), cluster_rows=T, show_rownames=F, show_colnames = T,
-         cluster_cols=T,fontsize_row=0.5, clustering_method="ward.D")
-resDESeq2_data <- as.data.frame(assay(ntd))
-write.table(resDESeq2_data, file = "../Results/DEG/Heatmap_total_DESeq2.txt", sep = "\t",
-            row.names = TRUE, col.names = NA)
-dev.off()
-
-group1 = which(sampleInfo_total$ID %in% unfactor(sampleInfo_total$ID[
-  sampleInfo_total$Condition ==  levels(sampleInfo_total$Condition)[1] ] ))
-
-group2 = which(sampleInfo_total$ID %in% sampleInfo_total$ID[
-  sampleInfo_total$Condition ==  levels(sampleInfo_total$Condition)[2] ] )
-
-mean_group1 = apply(assay(ntd),1, function(x) mean(x[group1]))
-mean_group2 = apply(assay(ntd),1, function(x) mean(x[group2]))
-diff_expr = mean_group1 - mean_group2
-
-mean_data = data.frame(mean_group1, mean_group2)
-colnames(mean_data) = c(levels(sampleInfo_total$Condition))
-
-jpeg("../Results/DEG/Heatmap_groups_DESeq2.jpeg")
-pheatmap(mean_data, cluster_rows=T, show_rownames=T, show_colnames = T,
-         cluster_cols=F,fontsize_row=0.5, clustering_method="ward.D")
-resDESeq2_data_mean <- as.data.frame(mean_data)
-write.table(resDESeq2_data_mean, file = "../Results/DEG/Heatmap_groups_DESeq2.txt", sep = "\t",
-            row.names = TRUE, col.names = NA)
-dev.off()
-
-## Data visualization. Glimma
-status <- as.numeric(resDESeq2$padj < .05)
-anno <- data.frame(GeneID=rownames(resDESeq2))
-glMDPlot(resDESeq2, status=status, counts=counts(des,normalized=TRUE),
-         groups=des$Condition, transform=FALSE,
-         samples=colnames(des), anno=anno, launch = F, 
-         html ="DESeq2_MD-plot",folder = "../Results/DEG")
 
 ### Iso-tRNA-CP
 
@@ -174,6 +225,8 @@ test1 <- apply(proportions,1, function(a)
   wilcox.test(x=a[conditions1],y=a[conditions2], alternative = "less")$p.value)
 test2 = apply(proportions,1, function(a) 
   wilcox.test(x=a[conditions1],y=a[conditions2], alternative = "gr")$p.value)
+
+
 test = cbind(test1, test2)
 test = apply(test,1,function(x) min(x))
 
@@ -196,8 +249,16 @@ colnames(mean_group2) = paste0("Proportion_", levels(sample_data$Condition)[2] )
 
 
 data_iso = data.frame(mean_group1, mean_group2, test, Adjusted_pvalue)
-
+data_iso = data.frame(genes = rownames(data_iso), data_iso)
 setorderv(data_iso, cols="Adjusted_pvalue", 1)
+
+fout = "Results_iso-tRNA-CP"
+title = "Results iso-tRNA-CP"
+htmlRep = HTMLReport(shortName= fout, title= title, 
+                     reportDirectory = "../Results/DEG")
+publish(data_iso, htmlRep)
+finish(htmlRep)
+
 write.table(data_iso, file = "../Results/DEG/Results_isotRNACP.txt", sep = "\t",
             row.names = TRUE, col.names = NA)
 
@@ -209,9 +270,6 @@ write.table(data_iso, file = "../Results/DEG/Results_isotRNACP.txt", sep = "\t",
 #finish(htmlRep1)
 #options(scipen = 999)
 
-
-out_table_x <- xtable(data_iso)
-print(out_table_x, type='html', file="../Results/DEG/Results_isotRNACP.html")
 
 
 group1 = which(sample_data$ID %in%sample_data$ID[
