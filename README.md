@@ -12,6 +12,7 @@ Before using the GUI make sure you have
 
 **Requirements** (Installed and added to the PATH):  
 - Anaconda
+- Brewbre
 - bowtie2  
 - samtools  
 - bedtools  
