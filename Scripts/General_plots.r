@@ -190,7 +190,7 @@ quality_plot <- ggplot(quality_data, aes(fill=quality_data$MAPQ, y=quality_data$
   ylim (0,100) + 
   labs (x = "", y = "% of reads mapped to tRNAs") + 
   scale_fill_manual(values = c("#a9d491","grey90"), labels = c("MAPQ > 2","MAPQ <= 2")) +
-  guides(fill=guide_legend(title="",size=5)) +  scale_y_reverse()
+guides(fill=guide_legend(title="",size=5)) +  scale_y_reverse()
 
 ggsave(quality_plot, file=paste0("../Results/Plots/Quality_barplot.jpeg"), 
        width = 20, height = 17, units = "cm")
@@ -221,7 +221,5 @@ for(group in sample_data$Condition){
   ggsave(quality_plot, file=paste0("../Results/Plots/Quality_barplot_",group, 
                                    ".jpeg"),width = 20, height = 17, units = "cm")
 }
-
-
 
 

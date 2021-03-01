@@ -49,7 +49,7 @@ if not os.path.exists('../Final_results'):
 
 
 # Removing soft clipped bases
-os.system('python '+func+'/rm_soft_clipped_bases.py '+sample_name+' '+'_PGloc_mapped_sort')
+os.system('python3 '+func+'/rm_soft_clipped_bases.py '+sample_name+' '+'_PGloc_mapped_sort')
 
 # Processing files (sorting and indexing).
 os.system('samtools sort '+sample_name+'_PGloc_mapped_sort_soft_clipped_rm.bam'+ ' -o ' +sample_name+'_PGloc_mapped_sort_soft_clipped_rm_sort.bam')

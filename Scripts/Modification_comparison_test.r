@@ -182,42 +182,39 @@ for(aa in aas){
     info_log2fc = c()
 
     for(pos in positions){
+      nas = TRUE
       if(pos %in% aa_info_final$pos[aa_info_final$gene == gene]){
         cov1 = data_group1$Base_coverage[data_group1$Position==pos]
         cov2 = data_group2$Base_coverage[data_group2$Position==pos]
         if(cov1 > 50 | cov2 >50){
           mod1 = data_group1$Modification_ratio[data_group1$Position==pos] * 100
           mod2 = data_group2$Modification_ratio[data_group2$Position==pos] * 100
-          
-          log2fc = (2*(mod1-mod2)/ (mod1+mod2))
-          
-          new_pvalue = (aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
-          new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
-          new_pvalue = formatC(new_pvalue,format="e")
-          info_pvalue = c(info_pvalue, new_pvalue)
-          info_mod1 = c(info_mod1, mod1)
-          info_mod2 = c(info_mod2, mod2)
-          info_cov1 = c(info_cov1, cov1)
-          info_cov2 = c(info_cov2, cov2)
-          info_log2fc = c(info_log2fc, log2fc)
-        }
-        else{
-          info_pvalue = c(info_pvalue, NA)
-          info_mod1 = c(info_mod1, NA)
-          info_mod2 = c(info_mod2, NA)
-          info_cov1 = c(info_cov1, NA)
-          info_cov2 = c(info_cov2, NA)
-          info_log2fc = c(info_log2fc, NA)
-        }
+          if(mod1 >10 & mod2>10){
+            nas = FALSE
+  
+            log2fc = (2*(mod2-mod1)/ (mod1+mod2))
+            
+            new_pvalue = (aa_info_final$adjusted_pvalues[aa_info_final$pos==pos & aa_info_final$gene==gene])
+            new_pvalue = new_pvalue[1]  # Sometimes it returns the value repeated.
+            new_pvalue = formatC(new_pvalue,format="e")
+            info_pvalue = c(info_pvalue, new_pvalue)
+            info_mod1 = c(info_mod1, mod1)
+            info_mod2 = c(info_mod2, mod2)
+            info_cov1 = c(info_cov1, cov1)
+            info_cov2 = c(info_cov2, cov2)
+            info_log2fc = c(info_log2fc, log2fc)
+          }
+          }
       }
-      else{
+      if(nas){
         info_pvalue = c(info_pvalue, NA)
         info_mod1 = c(info_mod1, NA)
         info_mod2 = c(info_mod2, NA)
         info_cov1 = c(info_cov1, NA)
         info_cov2 = c(info_cov2, NA)
         info_log2fc = c(info_log2fc, NA)
-      }}
+      }
+      }
   
     
     final_data[cont,1:ncol(final_data)] = info_log2fc
@@ -229,29 +226,31 @@ for(aa in aas){
     log2fc_list[cont,1:ncol(final_data)] = info_log2fc
     cont = cont +1
   }
-  if(nrow(final_data) >0){
-    setwd("../Results/Heatmaps")
-    heatmap_file = paste0("Comparison_", aa, ".html")
-    
-    custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
-                           "Modification ", groups[1], " (%): ", mod1_list, "\n",
-                           "Coverage ", groups[1], ": ", cov1_list, "\n",
-                           "Modification ", groups[2], " (%): ", mod2_list, "\n",
-                           "Coverage ", groups[2], ": ", cov2_list, "\n",
-                           "(",groups[1], " - ", groups[2],")", "/mean: ", log2fc_list, "\n",
-                           "Adjusted pvalue: ", pvalue_list)
-    
-    heatmap = heatmaply(final_data,  
-                        colors= colorRampPalette(rev(brewer.pal(9, "RdBu"))),
-                        plot_method = "plotly", 
-                        limits=c(min(final_data, na.rm=TRUE),
-                                              max(final_data,na.rm=TRUE)),
-                        custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
-                        xlab="Position", ylab="Gene", column_text_angle=0, 
-                        dendogram=FALSE, show_dendogram=c("FALSE", "FALSE"),
-                        file=heatmap_file)
-    setwd(dir_scripts)
-  }
+  if(nrow(final_data)>0){
+    if(table(is.na(final_data)) != length(final_data)){
+      setwd("../Results/Heatmaps")
+      heatmap_file = paste0("Comparison_", aa, ".html")
+      
+      custom_text[] = paste0("Gene: ", rownames(final_data), "\n",
+                             "Modification ", groups[1], " (%): ", mod1_list, "\n",
+                             "Coverage ", groups[1], ": ", cov1_list, "\n",
+                             "Modification ", groups[2], " (%): ", mod2_list, "\n",
+                             "Coverage ", groups[2], ": ", cov2_list, "\n",
+                             "(",groups[2], " - ", groups[1],")", "/mean: ", log2fc_list, "\n",
+                             "Adjusted pvalue: ", pvalue_list)
+      
+      heatmap = heatmaply(final_data,  
+                          colors= colorRampPalette(rev(brewer.pal(9, "RdBu"))),
+                          plot_method = "plotly", 
+                          limits=c(min(final_data, na.rm=TRUE),
+                                   max(final_data,na.rm=TRUE)),
+                          custom_hovertext=custom_text, Rowv = FALSE, Colv=FALSE, 
+                          xlab="Position", ylab="Gene", column_text_angle=0, 
+                          dendogram=FALSE, show_dendogram=c("FALSE", "FALSE"),
+                          file=heatmap_file)
+      setwd(dir_scripts)
+    }
+  } 
 }
 
 #out_table_x <- xtable(data_iso)

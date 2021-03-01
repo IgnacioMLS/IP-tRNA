@@ -46,7 +46,7 @@ os.system('samtools sort '+sample_name+'_MGloc_mapped.bam'+ ' -o ' +sample_name+
 os.system('samtools index '+sample_name+'_MGloc_mapped_sort.bam') 
  
 # Removing soft clipped bases
-os.system('python '+func+'/rm_soft_clipped_bases.py '+sample_name+' '+'_MGloc_mapped_sort')
+os.system('python3 '+func+'/rm_soft_clipped_bases.py '+sample_name+' '+'_MGloc_mapped_sort')
 
 # Processing files (sorting and indexing).
 os.system('samtools sort '+sample_name+'_MGloc_mapped_sort_soft_clipped_rm.bam'+ ' -o ' +sample_name+'_MGloc_mapped_sort_soft_clipped_rm_sort.bam')

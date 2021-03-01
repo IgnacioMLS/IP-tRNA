@@ -22,7 +22,7 @@ options(tinytex.verbose = TRUE)
 
 ## Mapping quality.
 
-```{r mapping quality,echo=FALSE,out.width = '100%'}
+```{r mapping quality, echo=FALSE,out.width = '100%'}
 file = paste0("../Results/Plots/Quality_barplot_", params$group, ".jpeg")
 knitr::include_graphics(file) 
 ```

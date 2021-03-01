@@ -45,8 +45,6 @@ if (!file.exists("../Results/DEG")){
 }
 all_genes <- read.delim("../Results/R_files/Counts/Counts_by_gene_total_for_DESeq2.txt")
 
-sum = apply(tmp_total,2,sum)
-
 sampleInfo_total <- read.table("../Fastq_downloaded/sample_data.txt",
                                header=T, stringsAsFactors = T)
 
@@ -56,8 +54,9 @@ sampleInfo_total <- read.table("../Fastq_downloaded/sample_data.txt",
 all_data = data.frame(all_genes, isodecoder=rownames(all_genes))
 all_data = data.frame(all_data, do.call(rbind, strsplit(as.character(
   all_data$isodecoder), "-")))
+
 # We keep the count matrix and the aa.
-all_data = all_data[c(c(1:ncol(tmp_total)), ncol(all_data)-3, ncol(all_data)-2)]
+all_data = all_data[c(c(1:ncol(all_data)), ncol(all_data)-3, ncol(all_data)-2)]
 colnames(all_data)[c(ncol(all_data)-1,ncol(all_data))] = c("aa", "codon")
 
 all_data = all_data[all_data$aa !="*",]
@@ -65,7 +64,7 @@ all_data$aa = factor(all_data$aa)
 isoaceptors = data.frame()
 for(aminoacid in levels(all_data$aa)){
   # Select all isodecoders from each isoaceptor, delete codon and isoaceptor info
-  isoaceptor1 = all_data[all_data$aa==aminoacid,1:(ncol(all_data)-2)]
+  isoaceptor1 = all_data[all_data$aa==aminoacid,1:(ncol(all_data)-8)]
   isoaceptor1 = t(apply(isoaceptor1, 2, function(x) sum(x)))
   rownames(isoaceptor1) = aminoacid
   isoaceptors = rbind(isoaceptors, isoaceptor1)
@@ -78,7 +77,7 @@ all_data$isodecoder = factor(all_data$isodecoder)
 isodecoders = data.frame()
 for(isodecoder in levels(all_data$isodecoder)){
   # Select all isodecoders from each isoaceptor, delete codon and isoaceptor info
-  isodecoder1 = all_data[all_data$isodecoder==isodecoder,1:(ncol(all_data)-3)]
+  isodecoder1 = all_data[all_data$isodecoder==isodecoder,1:(ncol(all_data)-9)]
   isodecoder1 = t(apply(isodecoder1, 2, function(x) sum(x)))
   rownames(isodecoder1) = isodecoder
   isodecoders = rbind(isodecoders, isodecoder1)
@@ -128,7 +127,7 @@ for(condition in repeats){
   file_heatmap_jpeg = paste0("../Results/DEG/Heatmap_", condition, "_DESeq2.jpeg")
   jpeg(file_heatmap_jpeg)
   show_rownames=F
-  if(condition != "all_genes"){ show_rownames=T}
+  if(condition == "isoaceptors"){ show_rownames=T}
   pheatmap(assay(ntd), cluster_rows=T, show_rownames=show_rownames, show_colnames = T,
            cluster_cols=T,fontsize_row=8, clustering_method="ward.D")
   resDESeq2_data <- as.data.frame(assay(ntd))

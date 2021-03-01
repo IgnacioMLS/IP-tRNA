@@ -53,7 +53,7 @@ if sample in samples:
         print ('1-Performing the Alignment against the whole genome:')
         command = "bowtie2 --local -p "+ str(nucleos)
         
-        #os.system(command + ' -N 0 -x '+refgen_path+'genome'+' '+samples_path + "/"+sample+' --un ../Results/'+sample_name+'/Alignment_WG/'+sample_name+'_unmapped_WGloc.fastq'+' | samtools view -bSF4 - > '+'../Results/'+sample_name+'/Alignment_WG/'+sample_name+'_WGloc_mapped.bam')
+        os.system(command + ' -N 0 -x '+refgen_path+'genome'+' '+samples_path + "/"+sample+' --un ../Results/'+sample_name+'/Alignment_WG/'+sample_name+'_unmapped_WGloc.fastq'+' | samtools view -bSF4 - > '+'../Results/'+sample_name+'/Alignment_WG/'+sample_name+'_WGloc_mapped.bam')
         
         #Set working directory.
         os.chdir('../Results/'+sample_name+'/Alignment_WG/')
@@ -75,7 +75,7 @@ if sample in samples:
 
         
         #Removing soft clipped bases
-        os.system('python '+func+'/rm_soft_clipped_bases.py '+sample_name+' '+'_WGloc_only_trna_sort')
+        os.system('python3 '+func+'/rm_soft_clipped_bases.py '+sample_name+' '+'_WGloc_only_trna_sort')
 
         #Processing files (sorting and indexing).
         os.system('samtools sort '+sample_name+'_WGloc_only_trna_sort_soft_clipped_rm.bam'+ ' -o ' +sample_name+'_WGloc_only_trna_soft_clipped_rm_sort.bam')
