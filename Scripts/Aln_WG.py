@@ -111,18 +111,26 @@ if sample in samples:
                     if int(num1) > 3:
                         out_id.write(qname+'\n')
         out_id.close()
+	
+	with open(sample_name+'intron_delet_mature.txt') as file2:
+            first = file2.read(1)
         
-		#change comand line !!!! https://github.com/broadinstitute/picard/wiki/Command-Line-Syntax-Transition-For-Users-(Pre-Transition)
-        os.system('picard FilterSamReads '+'I='+sample_name+'_WGloc_only_trna_precursor_sort.bam '+'O='+sample_name+'_WGloc_only_trna_with_intron_precursor.bam READ_LIST_FILE='+sample_name+'intron_delet_mature.txt FILTER=excludeReadList >/dev/null 2>&1')
-		
-		#Sort the bam file.
-        os.system('samtools sort '+sample_name+'_WGloc_only_trna_with_intron_precursor.bam'+ ' -o ' +sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam')
+	if not first:
+            os.rename(sample_name+'_WGloc_only_trna_precursor_sort.bam',sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam') 
+            os.system('samtools view -F 4 '+sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam '+'| cut -f1 | sort -u > '+sample_name+'_WGloc_only_trna_precursor_filtered.txt')
 
-		#Index the bam file.
-        os.system('samtools index '+sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam') 
+        else:
+            #change comand line !!!! https://github.com/broadinstitute/picard/wiki/Command-Line-Syntax-Transition-For-Users-(Pre-Transition)
+            os.system('picard FilterSamReads '+'I='+sample_name+'_WGloc_only_trna_precursor_sort.bam '+'O='+sample_name+'_WGloc_only_trna_with_intron_precursor.bam READ_LIST_FILE='+sample_name+'intron_delet_mature.txt FILTER=excludeReadList >/dev/null 2>&1')
 		
-		#Extract the reads id of the precursor 
-        os.system('samtools view -F 4 '+sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam '+'| cut -f1 | sort -u > '+sample_name+'_WGloc_only_trna_precursor_filtered.txt')
+        	#Sort the bam file.
+            os.system('samtools sort '+sample_name+'_WGloc_only_trna_with_intron_precursor.bam'+ ' -o ' +sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam')
+
+        	#Index the bam file.
+            os.system('samtools index '+sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam') 
+        	
+        	#Extract the reads id of the precursor 
+            os.system('samtools view -F 4 '+sample_name+'_WGloc_only_trna_with_intron_precursor_sort.bam '+'| cut -f1 | sort -u > '+sample_name+'_WGloc_only_trna_precursor_filtered.txt')
 
 		#Extact the mature reads:
         os.system('picard FilterSamReads '+'I='+sample_name+'_WGloc_only_trna_soft_clipped_rm_sort.bam '+'O='+sample_name+'_WGloc_only_trna_mature.bam READ_LIST_FILE='+sample_name+'_WGloc_only_trna_precursor_filtered.txt FILTER=excludeReadList >/dev/null 2>&1')
