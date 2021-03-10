@@ -53,8 +53,8 @@ def retrieve_SRR():
     SRR = text_Widget.get("1.0",'end-1c')
     first_digits=SRR[0:6]
     last_digits='00'+SRR[-1:]
-    ftp_link1='ftp://ftp.sra.ebi.ac.uk/vol1/fastq/'+first_digits+'/'+last_digits+'/'+SRR+'/'+SRR+'.fastq.gz'
-    ftp_link2 ="ftp://ftp.sra.ebi.ac.uk/vol1/fastq/"+first_digits+"/"+SRR+"/"+SRR+".fastq.gz"
+    ftp_link1 = 'ftp://ftp.sra.ebi.ac.uk/vol1/fastq/'+first_digits+'/'+last_digits+'/'+SRR+'/'+SRR+'.fastq.gz'
+    ftp_link2 = "ftp://ftp.sra.ebi.ac.uk/vol1/fastq/"+first_digits+"/"+SRR+"/"+SRR+".fastq.gz"
 
     if 'Linux' in o_sys or 'Darwin' in o_sys:
         os.system('wget -P ' + app.fastqFolder + " " + ftp_link1)
@@ -62,14 +62,6 @@ def retrieve_SRR():
             os.system('wget -P ' + app.fastqFolder + " " + ftp_link2)
             
         os.system("gunzip " + app.fastqFolder + "/" + SRR + ".fastq.gz")
-    elif 'Windows' in o_sys:
-        os.chdir(app.fastqFolder)  # This can fail!
-        
-        os.system('curl.exe -O '+ftp_link1)
-        if SRR + ".fastq.gz" not in os.listdir(app.fastqFolder):
-            os.system('curl.exe -O '+ftp_link2)
-        os.system('wsl gzip -d '+SRR+'.fastq.gz')
-        #os.system('del '+SRR+'.fastq.gz')
         
     
     if SRR+".fastq" in os.listdir(app.fastqFolder):
@@ -149,8 +141,9 @@ def run_alignment():
 
     for sample in sample_data:
         sample = sample.split("\t")[0]
-        sample = sample + ".fastq"
-        alignment(sample)
+        if sample != "\n" and sample != "":    
+            sample = sample + ".fastq"
+            alignment(sample)
     
     os.chdir(app.scriptsFolder)
     r_preparation()
